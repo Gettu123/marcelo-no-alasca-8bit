@@ -12,8 +12,8 @@
   canvas{width:100%;height:100%;display:block;background:#87c9ef;image-rendering:pixelated;image-rendering:crisp-edges;border:4px solid #17212b;box-shadow:0 0 0 4px #9ec9df,0 14px 40px #0008}
   #hud{position:absolute;left:12px;right:12px;top:10px;display:flex;justify-content:space-between;pointer-events:none;color:#fff;text-shadow:2px 2px #000;font-size:14px}
   .hudBox{background:#101820dd;border:2px solid #d9eef5;padding:5px 8px}
-  #message{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  #panel{display:none;min-width:270px;max-width:82%;padding:20px;background:#101820ee;border:4px solid #f2f6f7;color:white;text-align:center;box-shadow:8px 8px #0008}
+  #message{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:10}
+  #panel{display:none;min-width:270px;max-width:82%;padding:20px;background:#101820ee;border:4px solid #f2f6f7;color:white;text-align:center;box-shadow:8px 8px #0008;pointer-events:auto}
   #panel h1{margin:0 0 10px;font-size:24px;color:#fff}
   #panel p{margin:7px 0;line-height:1.4}
   button{font:inherit;font-weight:bold;cursor:pointer;border:3px solid #17212b;background:#e7f7ff;color:#17212b;padding:9px 14px;margin:5px}
@@ -49,15 +49,6 @@
 
 <script>
 "use strict";
-
-/*
-  MARCELO NO ALASCA — jogo 8-bit em HTML5 Canvas
-  Controles:
-  A/D ou ←/→ = andar
-  Espaço/W/↑ = pular
-  R = reiniciar fase
-  Enter = iniciar/continuar
-*/
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -192,7 +183,7 @@ function resetLevel(){
 }
 
 function startGame(){
-  state="play"; lives=3; score=0; levelIndex=0; resetLevel();
+  state="play"; lives=3; score=0; levelIndex=0; resetLevel(); hidePanel();
 }
 
 function nextLevel(){
@@ -218,7 +209,7 @@ function die(reason){
 
 function continueAfterDeath(){
   if(state==="respawn"){ hidePanel(); state="play"; resetLevel(); }
-  else if(state==="gameover" || state==="win"){ hidePanel(); startGame(); }
+  else if(state==="gameover" || state==="win" || state==="title"){ hidePanel(); startGame(); }
 }
 
 function showPanel(title,text,button){
@@ -227,7 +218,10 @@ function showPanel(title,text,button){
   p.style.display="block";
   document.getElementById("panelBtn").onclick=continueAfterDeath;
 }
-function hidePanel(){document.getElementById("panel").style.display="none"}
+
+function hidePanel(){
+  document.getElementById("panel").style.display="none";
+}
 
 function updateHud(){
   document.getElementById("level").textContent=(levelIndex+1);
@@ -240,7 +234,7 @@ function rectsOverlap(a,b){
 }
 
 function jump(){
-  if(state==="title"){startGame();return}
+  if(state==="title"){startGame();return;}
   if(state!=="play") return;
   if(player.onGround){player.vy=JUMP;player.onGround=false; beep(520,0.06,"square")}
 }
@@ -302,9 +296,7 @@ function drawSky(){
   grad.addColorStop(0,"#5aa8d6"); grad.addColorStop(1,"#d9f2ff");
   ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
 
-  // lua
   ctx.fillStyle="#f4f0d0";ctx.fillRect(250,18,12,12);ctx.fillRect(246,22,20,4);
-  // nuvens
   for(let x=0;x<400;x+=90){
     let sx=x-cameraX*0.12;
     ctx.fillStyle="#ffffff55";
@@ -328,7 +320,6 @@ function drawWater(){
 
 function drawPlatform(p){
   const x=p[0]-cameraX,y=p[1];
-  // gelo
   ctx.fillStyle="#dff8ff";ctx.fillRect(x,y,p[2],p[3]);
   ctx.fillStyle="#a7dced";ctx.fillRect(x,y,p[2],3);
   ctx.fillStyle="#6eb4d0";
@@ -377,27 +368,19 @@ function drawPlayer(){
   const x=Math.round(player.x-cameraX), y=Math.round(player.y);
   const step=(player.frame%2===0)?0:2;
   ctx.save();
-  // pernas
   ctx.fillStyle="#274f7a";
   ctx.fillRect(x+3,y+16,4,7-step);
   ctx.fillRect(x+8,y+16,4,7+step);
-  // tênis
   ctx.fillStyle="#20252a";
   ctx.fillRect(x+1,y+22,7,3);ctx.fillRect(x+8,y+22,7,3);
-  // corpo
   ctx.fillStyle="#252525";ctx.fillRect(x+2,y+8,11,10);
   ctx.fillStyle="#333";ctx.fillRect(x+4,y+9,7,6);
-  // braços
   ctx.fillStyle="#d88958";
   ctx.fillRect(x,y+9,3,9-step);ctx.fillRect(x+12,y+9,3,9+step);
-  // cabeça
   ctx.fillStyle="#e6a06b";ctx.fillRect(x+3,y+1,9,9);
   ctx.fillStyle="#2c201c";ctx.fillRect(x+2,y,10,4);ctx.fillRect(x+4,y-2,6,3);
-  // olhos
   ctx.fillStyle="#171313";ctx.fillRect(x+5,y+5,2,2);ctx.fillRect(x+9,y+5,2,2);
-  // barba/bigode
   ctx.fillStyle="#2b201c";ctx.fillRect(x+5,y+7,6,3);ctx.fillRect(x+6,y+9,5,2);
-  // bochechas
   ctx.fillStyle="#ef7e72";ctx.fillRect(x+3,y+7,2,2);ctx.fillRect(x+11,y+7,2,2);
   ctx.restore();
 }
@@ -454,8 +437,8 @@ window.addEventListener("keydown",e=>{
   keys[e.key]=true;
   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," ","Enter"].includes(e.key))e.preventDefault();
   if(e.key==="Enter"){
-    if(state==="title")startGame();
-    else if(state!=="play")continueAfterDeath();
+    if(state==="title") startGame();
+    else if(state!=="play") continueAfterDeath();
   }
   if(e.key==="r"||e.key==="R"){if(state==="play")resetLevel();}
 });
@@ -472,9 +455,10 @@ bindTouch("left","ArrowLeft");
 bindTouch("right","ArrowRight");
 document.getElementById("jump").addEventListener("pointerdown",e=>{e.preventDefault();jump()});
 
+// Inicialização correta
+state="title";
 resetLevel();
 showPanel("MARCELO NO ALASCA","Use ← → para andar e Espaço/▲ para pular.<br><br>Chegue ao iglu sem cair na água e sem tocar nos animais.","COMEÇAR");
-state="title";
 requestAnimationFrame(loop);
 </script>
 </body>
